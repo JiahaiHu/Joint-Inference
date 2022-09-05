@@ -39,6 +39,7 @@ spec:
                 cpu: 100m
               limits:
                 memory: 2Gi
+                cpu: 2000m
             volumeMounts:
               - name: outputdir
                 mountPath: /data/
