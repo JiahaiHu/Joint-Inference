@@ -28,8 +28,6 @@ from interface import Estimator
 
 LOG = logging.getLogger(__name__)
 
-camera_address = Context.get_parameters('video_url')
-
 class_names = ['person', 'helmet', 'helmet_on', 'helmet_off']
 all_output_path = Context.get_parameters(
     'all_examples_inference_output'
@@ -138,26 +136,22 @@ def main():
         hard_example_mining=hard_example_mining
     )
 
-    camera = cv2.VideoCapture(camera_address)
-    fps = 10
+    fps = 24
     nframe = 0
+    start_time = time.time() * 1000
     while 1:
-        ret, input_yuv = camera.read()
-        if not ret:
-            LOG.info(
-                f"camera is not open, camera_address={camera_address},"
-                f" sleep 5 second.")
-            time.sleep(5)
-            camera = cv2.VideoCapture(camera_address)
+        if (time.time() * 1000 - start_time) < (1000 / fps):
             continue
-
-        if nframe % fps:
-            nframe += 1
-            continue
-
-        img_rgb = cv2.cvtColor(input_yuv, cv2.COLOR_BGR2RGB)
+        start_time = time.time() * 1000
         nframe += 1
-        LOG.info(f"camera is open, current frame index is {nframe}")
+
+        img = cv2.imread(f"./images/{str(nframe).zfill(5)}.jpg")
+        if img is None:
+            LOG.info(f"image not found!")
+            break
+
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        LOG.info(f"current frame index is {nframe}")
         is_hard_example, final_result, edge_result, cloud_result = (
             inference_instance.inference(img_rgb)
         )

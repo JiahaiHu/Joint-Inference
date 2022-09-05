@@ -17,6 +17,7 @@ WORKDIR /home/work
 COPY ./lib /home/lib
 
 ENTRYPOINT ["python"]
+COPY frames /home/work/images
 COPY little_model/little_model.py  /home/work/infer.py
 COPY little_model/interface.py  /home/work/interface.py
 
