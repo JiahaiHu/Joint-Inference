@@ -1,9 +1,7 @@
 import math
-import mindspore as ms
-import numpy as np
 import pandas as pd
 
-from model_zoo.resnet_local import resnet50
+from model.model_zoo.resnet_local import resnet50
 
 class Code2SpacePartition:
     def __init__(self, model_name="resnet_50"):
@@ -21,7 +19,7 @@ class Code2SpacePartition:
         if partition_idx == len(self.layer_name):
             return None
         else:
-            net = resnet50(first_layer=self.layer_name[partition_idx])
+            net = resnet50(end_layer=self.layer_name[partition_idx])
         return net, self.layer_name[partition_idx]
 
     def predict_model(self):

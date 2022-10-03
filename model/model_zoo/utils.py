@@ -1,6 +1,5 @@
 import os
-import pandas as pd
-from model_zoo.load_weight_local import load_checkpoint,load_param_into_net,load_checkpoint_from_torch
+from model.model_zoo.load_weight_local import load_checkpoint,load_param_into_net,load_checkpoint_from_torch
 from mindvision.dataset.download import DownLoad
 
 

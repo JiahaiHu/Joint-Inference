@@ -15,7 +15,6 @@
 import os
 import logging
 
-import cv2
 import numpy as np
 import mindspore as ms
 from skimage.transform import resize
@@ -45,7 +44,7 @@ class Estimator:
         
     @staticmethod
     def postprocess(model_output):
-        result_np = output_.asnumpy()
+        result_np = model_output.asnumpy()
         return 0
         
     def predict(self, data, **kwargs):
