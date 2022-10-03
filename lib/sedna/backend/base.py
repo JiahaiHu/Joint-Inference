@@ -112,10 +112,13 @@ class BackendBase:
         if model_url:
             model_path = FileOps.download(model_url, model_path)
         self.has_load = True
+        '''
         if not (hasattr(self.estimator, "load")
                 and os.path.exists(model_path)):
             return
         return self.estimator.load(model_url=model_path)
+        '''
+        return self.estimator.load()
 
     def set_weights(self, weights):
         """Set weight with memory tensor."""

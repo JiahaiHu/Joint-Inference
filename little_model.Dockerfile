@@ -1,24 +1,30 @@
-FROM python:3.7
+FROM python:3.8
 
-RUN apt update \
-  && apt install -y libgl1-mesa-glx
-  
+RUN apt update
+RUN pip install --upgrade pip
+
+# Required by OpenCV
+RUN apt install -y libgl1-mesa-glx
+
+# install mindspore
+RUN pip install https://ms-release.obs.cn-north-4.myhuaweicloud.com/1.8.0/MindSpore/cpu/aarch64/mindspore-1.8.0-cp38-cp38-linux_aarch64.whl --trusted-host ms-release.obs.cn-north-4.myhuaweicloud.com -i https://pypi.tuna.tsinghua.edu.cn/simple
+# install dependencies of object detection application
+RUN pip install mindvision torch skimage
+RUN pip install xlrd==1.2.0 # read xlsx
+
+# install requirements of sedna lib
 COPY ./lib/requirements.txt /home
 RUN pip install -r /home/requirements.txt
-RUN pip install opencv-python==4.5.1.48
-RUN pip install Pillow==8.0.1
-RUN pip install protobuf==3.20
-COPY ./tensorflow-1.15.0-cp37-cp37m-linux_aarch64.whl /home
-RUN pip install /home/tensorflow-1.15.0-cp37-cp37m-linux_aarch64.whl
 
 ENV PYTHONPATH "/home/lib"
 
 WORKDIR /home/work
 COPY ./lib /home/lib
 
-ENTRYPOINT ["python"]
-COPY frames /home/work/images
-COPY little_model/little_model.py  /home/work/infer.py
-COPY little_model/interface.py  /home/work/interface.py
+COPY ./model /home/work/model
+COPY joint_inference/helmet_detection_inference/frames /home/work/images
+COPY joint_inference/helmet_detection_inference/little_model/little_model.py  /home/work/infer.py
+COPY joint_inference/helmet_detection_inference/little_model/interface.py  /home/work/interface.py
 
-CMD ["infer.py"]  
+#ENTRYPOINT ["python"]
+#CMD ["infer.py"]

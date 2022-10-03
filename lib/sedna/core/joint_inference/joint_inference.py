@@ -60,6 +60,10 @@ class BigModelService(JobBase):
 
         if callable(self.estimator):
             self.estimator = self.estimator()
+
+        self.estimator.load()
+        return
+
         if not os.path.exists(self.model_path):
             raise FileExistsError(f"{self.model_path} miss")
         else:
@@ -167,10 +171,13 @@ class JointInference(JobBase):
 
         if callable(self.estimator):
             self.estimator = self.estimator()
+        '''
         if not os.path.exists(self.model_path):
             raise FileExistsError(f"{self.model_path} miss")
         else:
             self.estimator.load(self.model_path)
+        '''
+        self.estimator.load()
         self.cloud = ModelClient(service_name=self.job_name,
                                  host=self.remote_ip, port=self.port)
         self.hard_example_mining_algorithm = None
@@ -251,6 +258,7 @@ class JointInference(JobBase):
         is_hard_example = False
         cloud_result = None
 
+        '''
         if self.hard_example_mining_algorithm:
             is_hard_example = self.hard_example_mining_algorithm(res)
             if is_hard_example:
@@ -263,4 +271,5 @@ class JointInference(JobBase):
                 else:
                     res = cloud_result
                 self.lc_reporter.update_for_collaboration_inference()
+        '''
         return [is_hard_example, res, edge_result, cloud_result]
