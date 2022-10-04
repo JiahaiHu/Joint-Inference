@@ -9,7 +9,7 @@ RUN apt install -y libgl1-mesa-glx
 # install mindspore
 RUN pip install https://ms-release.obs.cn-north-4.myhuaweicloud.com/1.8.0/MindSpore/cpu/aarch64/mindspore-1.8.0-cp38-cp38-linux_aarch64.whl --trusted-host ms-release.obs.cn-north-4.myhuaweicloud.com -i https://pypi.tuna.tsinghua.edu.cn/simple
 # install dependencies of object detection application
-RUN pip install mindvision torch skimage
+RUN pip install mindvision torch scikit-image
 RUN pip install xlrd==1.2.0 # read xlsx
 
 # install requirements of sedna lib
