@@ -1,11 +1,12 @@
 import math
+import os
 import pandas as pd
 
 from model.model_zoo.resnet_local import resnet50
 
 class Code2SpacePartition:
     def __init__(self, model_name="resnet_50"):
-        model_info = pd.read_excel("./model_zoo/model_info.xlsx", sheet_name=model_name)
+        model_info = pd.read_excel(os.path.dirname(os.path.realpath(__file__)) + "/model_zoo/model_info.xlsx", sheet_name=model_name)
         self.layer_name = model_info['layer_name'].values
         self.layer_size = model_info['layer_size'].values  # output size in MB
         self.pi_latency = model_info['pi_latency'].values
