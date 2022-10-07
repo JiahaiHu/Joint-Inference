@@ -22,9 +22,9 @@ WORKDIR /home/work
 COPY ./lib /home/lib
 
 COPY ./model /home/work/model
-COPY joint_inference/helmet_detection_inference/frames /home/work/images
-COPY joint_inference/helmet_detection_inference/little_model/little_model.py  /home/work/infer.py
-COPY joint_inference/helmet_detection_inference/little_model/interface.py  /home/work/interface.py
+COPY ./images /home/work/images
+COPY little_model/little_model.py  /home/work/infer.py
+COPY little_model/interface.py  /home/work/interface.py
 
-#ENTRYPOINT ["python"]
-#CMD ["infer.py"]
+ENTRYPOINT ["python"]
+CMD ["infer.py"]

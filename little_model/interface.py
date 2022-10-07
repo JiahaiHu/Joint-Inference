@@ -18,7 +18,6 @@ import logging
 import numpy as np
 import mindspore as ms
 from skimage.transform import resize
-#from model import controller as code2space
 import model.controller as code2space
 
 LOG = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ class Estimator:
 
     def load(self, model_url=""):
         LOG.info("load")
-        self.net, self.partition_layer = self.controller.init_model(500)
+        self.net, self.partition_layer = self.controller.init_model_pi("max_pool")
 
     @staticmethod
     def preprocess(image, input_shape):
@@ -45,10 +44,11 @@ class Estimator:
     @staticmethod
     def postprocess(model_output):
         result_np = model_output.asnumpy()
-        return 0
+        return result_np
         
     def predict(self, data, **kwargs):
         input_np = resize(data, (224, 224), anti_aliasing=True).transpose((2, 0, 1))
         input_feed = ms.Tensor(np.expand_dims(input_np / np.max(input_np), axis=0), ms.float32)
         result = self.net(input_feed)
-        return result
+        result_np = self.postprocess(result)
+        return result_np

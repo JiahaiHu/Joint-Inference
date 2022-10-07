@@ -145,7 +145,7 @@ def main():
         start_time = time.time() * 1000
         nframe += 1
 
-        img = cv2.imread(f"./images/{str(nframe).zfill(5)}.jpg")
+        img = cv2.imread(f"./images/inference-result.png")
         if img is None:
             LOG.info(f"image not found!")
             break
@@ -155,6 +155,8 @@ def main():
         is_hard_example, final_result, edge_result, cloud_result = (
             inference_instance.inference(img_rgb)
         )
+        LOG.info(cloud_result)
+        '''
         output_deal(
             final_result,
             is_hard_example,
@@ -163,6 +165,7 @@ def main():
             nframe,
             img_rgb
         )
+        '''
 
 
 if __name__ == '__main__':
