@@ -151,9 +151,10 @@ def main():
             break
 
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        cpu_freq_ratio = open("./freq.txt").readline().strip()
         LOG.info(f"current frame index is {nframe}")
         is_hard_example, final_result, edge_result, cloud_result = (
-            inference_instance.inference(img_rgb)
+            inference_instance.inference(img_rgb, float(cpu_freq_ratio))
         )
         LOG.info(cloud_result)
         '''

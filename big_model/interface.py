@@ -17,6 +17,8 @@ import logging
 
 import numpy as np
 import mindspore as ms
+import yaml
+
 import model.controller as code2space
 
 LOG = logging.getLogger(__name__)
@@ -30,24 +32,52 @@ class Estimator:
         """
         self.controller = code2space.Code2SpacePartition()
         self.net = None
+        self.config = self.load_config()
+        self.config['cpu_freq_ratio'] = 1
+        c = self.config
+        self.partition_idx, utility = self.controller.get_partition_point(c['network_bw'], c['overall_thr_weight'],
+                                                                    c['mobile_thr_weight'], c['cpu_freq_ratio'],
+                                                                    c['server_ratio'])
+
+    @staticmethod
+    def load_config():
+        config = yaml.safe_load(open('./config.yaml', 'r'))
+        return config
 
     def load(self, model_url=""):
         LOG.info("load")
-        self.net, self.partition_layer = self.controller.init_model_server(500)
+        self.net, self.partition_layer = self.controller.init_model_server(self.partition_idx)
 
     @staticmethod
     def preprocess(image, input_shape):
         """Preprocess functions in edge model inference"""
         return 0
-        
+
     @staticmethod
     def postprocess(model_output):
         result_np = model_output.asnumpy()
         return result_np.tolist()
-        
-    def predict(self, data, **kwargs):
+
+    def predict(self, data, cpu_freq_ratio, **kwargs):
         input_np = np.array(data)
         input_feed = ms.Tensor(input_np, ms.float32)
         result = self.net(input_feed)
         result_np = self.postprocess(result)
+
+        # reload model if partition point is changed
+        c = self.load_config()
+        c['cpu_freq_ratio'] = cpu_freq_ratio
+        if self.config == c:
+            self.config = c
+            partition_idx, utility = self.controller.get_partition_point(c['network_bw'], c['overall_thr_weight'],
+                                                                    c['mobile_thr_weight'], c['cpu_freq_ratio'],
+                                                                    c['server_ratio'])
+            if self.partition_idx != partition_idx:
+                self.partition_idx = partition_idx
+                print('reload')
+                # self.load()
+
+        # TODO: return partition layer name to edge
+        # self.partition_layer
+
         return result_np

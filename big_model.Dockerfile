@@ -25,6 +25,7 @@ WORKDIR /home/work
 COPY ./lib /home/lib
 
 COPY ./model /home/work/model
+COPY big_model/config.yaml  /home/work/config.yaml
 COPY big_model/big_model.py  /home/work/infer.py
 COPY big_model/interface.py  /home/work/interface.py
 

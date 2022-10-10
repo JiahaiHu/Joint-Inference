@@ -12,11 +12,7 @@ class Code2SpacePartition:
         self.pi_latency = model_info['pi_latency'].values
         self.server_latency = model_info['server_' + devcie_name + '_latency'].values
 
-    def init_model_server(self, network_bw, overall_thr_weight=0.4, mobile_thr_weight=0.2, CPU_freq=1, server_ratio=1):
-        # 1. get partition layer
-        partition_idx, utility = self.get_partition_point(network_bw, overall_thr_weight, mobile_thr_weight, CPU_freq, server_ratio)
-
-        # 2. depend on partition idx to initialize the model instance
+    def init_model_server(self, partition_idx):
         if partition_idx == len(self.layer_name):
             return None
         else:
@@ -62,7 +58,7 @@ class Code2SpacePartition:
                     max_band = band_occupation
         return min_band, max_band
 
-    def get_partition_point(self, network_bw, overall_thr_weight, mobile_thr_weight, CPU_freq, server_ratio):
+    def get_partition_point(self, network_bw, overall_thr_weight, mobile_thr_weight, cpu_freq_ratio, server_ratio):
         """
         Depend on the network bandwidth, and the weights for overall thr., mobile thr., and network thr, to get
         the partition layer that can maximize the utility of the system.
@@ -86,7 +82,7 @@ class Code2SpacePartition:
         min_band, max_band = self.get_max_min_band(network_bw)
         for partition_idx, partition_layer in enumerate(self.layer_name):
             utility = self._get_utility(network_bw, partition_idx, overall_thr_weight, mobile_thr_weight,
-                                        CPU_freq, server_ratio, min_e2e, max_e2e, min_band, max_band)
+                                        cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band)
             if max_utility is None or utility > max_utility:
                 max_utility = utility
                 max_idx = partition_idx

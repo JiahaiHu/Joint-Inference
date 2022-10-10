@@ -77,7 +77,7 @@ class BigModelService(JobBase):
               **kwargs):
         """todo: no support yet"""
 
-    def inference(self, data=None, post_process=None, **kwargs):
+    def inference(self, data=None, cpu_freq_ratio=None, post_process=None, **kwargs):
         """
         Inference task for JointInference
 
@@ -104,7 +104,7 @@ class BigModelService(JobBase):
             callback_func = ClassFactory.get_cls(
                 ClassType.CALLBACK, post_process)
 
-        res = self.estimator.predict(data, **kwargs)
+        res = self.estimator.predict(data, cpu_freq_ratio, **kwargs)
         if callback_func:
             res = callback_func(res)
         return res
@@ -216,7 +216,7 @@ class JointInference(JobBase):
             **param
         )
 
-    def inference(self, data=None, post_process=None, **kwargs):
+    def inference(self, data=None, cpu_freq_ratio=1, post_process=None, **kwargs):
         """
         Inference task with JointInference
 
@@ -259,7 +259,7 @@ class JointInference(JobBase):
 
         try:
             cloud_data = self.cloud.inference(
-                edge_result.tolist(), post_process=post_process, **kwargs)
+                edge_result.tolist(), cpu_freq_ratio=cpu_freq_ratio, post_process=post_process, **kwargs)
             cloud_result = cloud_data["result"]
         except Exception as err:
             self.log.error(f"get cloud result error: {err}")

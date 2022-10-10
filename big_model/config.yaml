@@ -1,0 +1,4 @@
+network_bw: 500
+overall_thr_weight: 0.4
+mobile_thr_weight: 0.2
+server_ratio: 1

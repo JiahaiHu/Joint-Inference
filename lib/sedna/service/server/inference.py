@@ -44,6 +44,7 @@ class ServePredictResult(BaseModel):  # pylint: disable=too-few-public-methods
 
 class InferenceItem(BaseModel):  # pylint: disable=too-few-public-methods
     data: List
+    cpu_freq_ratio: float
     callback: Optional[str] = None
 
 
@@ -98,5 +99,5 @@ class InferenceServer(BaseServer):  # pylint: disable=too-many-arguments
 
     def predict(self, data: InferenceItem):
         inference_res = self.model.inference(
-            data.data, post_process=data.callback)
+            data.data, data.cpu_freq_ratio, post_process=data.callback)
         return ServePredictResult(result=inference_res)

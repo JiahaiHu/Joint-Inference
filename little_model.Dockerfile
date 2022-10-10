@@ -23,6 +23,7 @@ COPY ./lib /home/lib
 
 COPY ./model /home/work/model
 COPY ./images /home/work/images
+COPY little_model/freq.txt  /home/work/freq.txt
 COPY little_model/little_model.py  /home/work/infer.py
 COPY little_model/interface.py  /home/work/interface.py
 
