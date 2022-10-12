@@ -40,6 +40,7 @@ class ServePredictResult(BaseModel):  # pylint: disable=too-few-public-methods
     """
 
     result: List
+    partition_layer_name: str
 
 
 class InferenceItem(BaseModel):  # pylint: disable=too-few-public-methods
@@ -98,6 +99,6 @@ class InferenceServer(BaseServer):  # pylint: disable=too-many-arguments
         return ServeModelInfoResult(infos=self.get_all_urls())
 
     def predict(self, data: InferenceItem):
-        inference_res = self.model.inference(
+        inference_res, partition_layer_name = self.model.inference(
             data.data, data.cpu_freq_ratio, post_process=data.callback)
-        return ServePredictResult(result=inference_res)
+        return ServePredictResult(result=inference_res, partition_layer_name=partition_layer_name)

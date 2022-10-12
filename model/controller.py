@@ -13,8 +13,8 @@ class Code2SpacePartition:
         self.server_latency = model_info['server_' + devcie_name + '_latency'].values
 
     def init_model_server(self, partition_idx):
-        if partition_idx == len(self.layer_name):
-            return None
+        if partition_idx is None or (partition_idx == len(self.layer_name)-1):
+            return None, self.layer_name[-1]
         else:
             net = resnet50(first_layer=self.layer_name[partition_idx], end_layer='prediction')
         return net, self.layer_name[partition_idx]
@@ -24,7 +24,7 @@ class Code2SpacePartition:
             return None
         else:
             net = resnet50(first_layer='input', end_layer=partition_layer_name)
-        return net, partition_layer_name
+        return net
 
     def get_max_min_e2e(self, network_bw, server_ratio, latency_ratio=1):
         min_e2e, max_e2e = None, None
@@ -75,7 +75,7 @@ class Code2SpacePartition:
         # 1. check the input parameters
         if overall_thr_weight < 0 or mobile_thr_weight < 0 or (overall_thr_weight + mobile_thr_weight) > 1:
             print("invalid weights", overall_thr_weight, mobile_thr_weight)
-            return
+            return None, None
         # 2. iterate the candidate partition layer
         max_utility, max_idx = None, 0
         min_e2e, max_e2e = self.get_max_min_e2e(network_bw, server_ratio)

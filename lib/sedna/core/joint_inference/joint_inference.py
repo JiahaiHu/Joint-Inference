@@ -95,6 +95,7 @@ class BigModelService(JobBase):
         Returns
         -------
         inference result
+        partition layer name
         """
 
         callback_func = None
@@ -104,10 +105,10 @@ class BigModelService(JobBase):
             callback_func = ClassFactory.get_cls(
                 ClassType.CALLBACK, post_process)
 
-        res = self.estimator.predict(data, cpu_freq_ratio, **kwargs)
+        res, name = self.estimator.predict(data, cpu_freq_ratio, **kwargs)
         if callback_func:
             res = callback_func(res)
-        return res
+        return res, name
 
 
 class JointInference(JobBase):
@@ -176,7 +177,8 @@ class JointInference(JobBase):
         else:
             self.estimator.load(self.model_path)
         '''
-        self.estimator.load()
+        self.partition_layer_name = "prediction"
+        self.estimator.load(partition_layer_name=self.partition_layer_name)
         self.cloud = ModelClient(service_name=self.job_name,
                                  host=self.remote_ip, port=self.port)
         self.hard_example_mining_algorithm = None
@@ -261,10 +263,14 @@ class JointInference(JobBase):
             cloud_data = self.cloud.inference(
                 edge_result.tolist(), cpu_freq_ratio=cpu_freq_ratio, post_process=post_process, **kwargs)
             cloud_result = cloud_data["result"]
+            partition_layer_name = cloud_data["partition_layer_name"]
         except Exception as err:
             self.log.error(f"get cloud result error: {err}")
         else:
             res = cloud_result
+            if self.partition_layer_name != partition_layer_name:
+                self.estimator.load(partition_layer_name=partition_layer_name)
+                self.partition_layer_name = partition_layer_name
         self.lc_reporter.update_for_collaboration_inference()
         
         return [is_hard_example, res, edge_result, cloud_result]

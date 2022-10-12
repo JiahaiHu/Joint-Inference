@@ -32,20 +32,20 @@ class Estimator:
         self.controller = code2space.Code2SpacePartition()
         self.net = None
 
-    def load(self, model_url=""):
-        LOG.info("load")
-        self.net, self.partition_layer = self.controller.init_model_pi("max_pool")
+    def load(self, partition_layer_name="prediction"):
+        print("load")
+        self.net = self.controller.init_model_pi(partition_layer_name)
 
     @staticmethod
     def preprocess(image, input_shape):
         """Preprocess functions in edge model inference"""
         return 0
-        
+
     @staticmethod
     def postprocess(model_output):
         result_np = model_output.asnumpy()
         return result_np
-        
+
     def predict(self, data, **kwargs):
         input_np = resize(data, (224, 224), anti_aliasing=True).transpose((2, 0, 1))
         input_feed = ms.Tensor(np.expand_dims(input_np / np.max(input_np), axis=0), ms.float32)

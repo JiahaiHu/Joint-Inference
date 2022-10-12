@@ -32,12 +32,8 @@ class Estimator:
         """
         self.controller = code2space.Code2SpacePartition()
         self.net = None
-        self.config = self.load_config()
-        self.config['cpu_freq_ratio'] = 1
-        c = self.config
-        self.partition_idx, utility = self.controller.get_partition_point(c['network_bw'], c['overall_thr_weight'],
-                                                                    c['mobile_thr_weight'], c['cpu_freq_ratio'],
-                                                                    c['server_ratio'])
+        self.config = None
+        self.partition_idx = 8
 
     @staticmethod
     def load_config():
@@ -59,25 +55,26 @@ class Estimator:
         return result_np.tolist()
 
     def predict(self, data, cpu_freq_ratio, **kwargs):
-        input_np = np.array(data)
-        input_feed = ms.Tensor(input_np, ms.float32)
-        result = self.net(input_feed)
-        result_np = self.postprocess(result)
+        if self.net is None: # inference all done on the edge
+            # TODO: save data (i.e., result)
+            result_np = []
+        else:
+            input_np = np.array(data)
+            input_feed = ms.Tensor(input_np, ms.float32)
+            result = self.net(input_feed)
+            result_np = self.postprocess(result)
 
         # reload model if partition point is changed
         c = self.load_config()
         c['cpu_freq_ratio'] = cpu_freq_ratio
-        if self.config == c:
+        if self.config != c: # parameters changed
             self.config = c
             partition_idx, utility = self.controller.get_partition_point(c['network_bw'], c['overall_thr_weight'],
                                                                     c['mobile_thr_weight'], c['cpu_freq_ratio'],
                                                                     c['server_ratio'])
-            if self.partition_idx != partition_idx:
+            if self.partition_idx != partition_idx: # partition point changed
                 self.partition_idx = partition_idx
                 print('reload')
-                # self.load()
+                self.load()
 
-        # TODO: return partition layer name to edge
-        # self.partition_layer
-
-        return result_np
+        return result_np, self.partition_layer

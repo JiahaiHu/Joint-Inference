@@ -99,7 +99,7 @@ class BackendBase:
         }]
         return results
 
-    def load(self, model_url="", model_name=None, **kwargs):
+    def load(self, model_url="", model_name=None, partition_layer_name="", **kwargs):
         mname = model_name or self.model_name
         if callable(self.estimator):
             varkw = self.parse_kwargs(self.estimator, **kwargs)
@@ -118,7 +118,7 @@ class BackendBase:
             return
         return self.estimator.load(model_url=model_path)
         '''
-        return self.estimator.load()
+        return self.estimator.load(partition_layer_name=partition_layer_name)
 
     def set_weights(self, weights):
         """Set weight with memory tensor."""
