@@ -18,6 +18,7 @@ import logging
 
 import cv2
 import numpy as np
+import os
 
 from sedna.common.config import Context
 from sedna.common.file_ops import FileOps
@@ -123,6 +124,39 @@ def output_deal(
     cv2.imwrite(f"{hard_example_edge_output_path}/{nframe}.jpeg",
                 edge_collaboration_frame)
 
+HIST_NB_BINS = 32
+HIST_DIFF_THRESHOLD = 0.1
+
+def get_Hist(frame):
+    nb_channels = frame.shape[-1]
+    hist = np.zeros((HIST_NB_BINS * nb_channels, 1), dtype='float32')
+    for i in range(nb_channels):
+        hist[i * HIST_NB_BINS: (i + 1) * HIST_NB_BINS] = \
+            cv2.calcHist(frame, [i], None, [HIST_NB_BINS], [0, 256])
+    hist = cv2.normalize(hist, hist)
+    return hist
+
+def get_Histdiff(hist, prev_hist):
+    return cv2.compareHist(hist, prev_hist, cv2.HISTCMP_CHISQR)
+
+def is_Hist_diff(img, prev_img):
+    hist = get_Hist(img)
+    prev_hist = get_Hist(prev_img)
+    hist_diff = get_Histdiff(prev_hist, hist)
+
+    is_diff = False
+    if hist_diff > HIST_DIFF_THRESHOLD:
+        is_diff = True
+
+    return is_diff
+
+
+def get_frame(n):
+    datasets_path = './model/dataset/images/'
+    datasets = os.listdir(datasets_path)
+    i = n % len(datasets)
+    return cv2.imread(datasets_path + datasets[i])
+
 
 def main():
 
@@ -136,27 +170,36 @@ def main():
         hard_example_mining=hard_example_mining
     )
 
-    fps = 24
+    fps = 1
     nframe = 0
+    img_prev = None
     start_time = time.time() * 1000
     while 1:
         if (time.time() * 1000 - start_time) < (1000 / fps):
             continue
         start_time = time.time() * 1000
-        nframe += 1
 
-        img = cv2.imread(f"./images/inference-result.png")
+        img = get_frame(nframe)
         if img is None:
             LOG.info(f"image not found!")
             break
 
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        if nframe == 0:
+            is_diff = True
+        else:
+            is_diff = is_Hist_diff(img_rgb, img_prev)
+        img_prev = img_rgb
+        if not is_diff:
+            continue
+
         cpu_freq_ratio = open("./freq.txt").readline().strip()
         LOG.info(f"current frame index is {nframe}")
         is_hard_example, final_result, edge_result, cloud_result = (
             inference_instance.inference(img_rgb, float(cpu_freq_ratio))
         )
         LOG.info(cloud_result)
+        nframe += 1
         '''
         output_deal(
             final_result,
