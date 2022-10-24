@@ -10,10 +10,12 @@ class Code2SpacePartition:
         model_info = pd.read_excel(os.path.dirname(os.path.realpath(__file__)) + "/model_zoo/model_info.xlsx", sheet_name=model_name)
         self.layer_name = model_info['layer_name'].values
         self.layer_size = model_info['layer_size'].values
+        self.IMAGE_SIZE = 0.189384068  # MB
         self.pi_latency = model_info['pi_latency'].values
         self.server_latency = model_info['server_' + devcie_name + '_latency'].values
-        self.BW_RANGE = [50, 600] # (Mbps) used for normalization
-        self.TRANSMISSION_DELAY = [0.020, 4] # network delay when using repeater satellites
+        self.BW_RANGE = [50, 600]  # Mbps
+        self.TRANSMISSION_DELAY = [0.020, 4]  # seconds
+        self.MIN_BAND_OCCUPY = 0.0000001
 
     def init_model_server(self, partition_idx):
         """initialize the model instance executed on the local server"""
@@ -83,7 +85,11 @@ class Code2SpacePartition:
         min_band, max_band = None, None
         for partition_idx, partition_layer in enumerate(self.layer_name):
             pi_latency = self.pi_latency[partition_idx] / cpu_freq_ratio
-            band_occupation = self.layer_size[partition_idx] / (network_bw / 8.0) * 1 / min(33.33, pi_latency)
+            if partition_idx != 8:
+                band_occupation = self.layer_size[partition_idx] / (network_bw / 8.0) * 1 / min(33.33, pi_latency)
+            else:
+                band_occupation = self.MIN_BAND_OCCUPY / (network_bw / 8.0) * 1 / min(33.33, pi_latency)
+
             if partition_idx == 0:
                 min_band, max_band = band_occupation, band_occupation
             else:
@@ -119,26 +125,26 @@ class Code2SpacePartition:
                 transmission < self.TRANSMISSION_DELAY[0] or transmission > self.TRANSMISSION_DELAY[1]):
             print("invalid transmission delay", transmission)
             return None, None
-        # 2. evaluate the maximum and minimum end-to-end latency and bandwidth occupation for the following normalization
+        # 2. iterate the candidate partition layer
         max_utility, max_idx = None, 0
         if transmission == 0:
             min_e2e, max_e2e = self.get_abs_max_min_e2e(server_ratio, cpu_freq_ratio, [0, 0])
         else:
             min_e2e, max_e2e = self.get_abs_max_min_e2e(server_ratio, cpu_freq_ratio, self.TRANSMISSION_DELAY)
-        min_band, max_band = self.get_max_min_band(network_bw, cpu_freq_ratio)
 
-        # 3. obtain the achieved utility under given partition layers
+        min_band, max_band = self.get_max_min_band(network_bw, cpu_freq_ratio)
         for partition_idx, partition_layer in enumerate(self.layer_name):
-            utility = self._get_utility(network_bw, partition_idx, overall_thr_weight, mobile_thr_weight,
-                                                cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band,
-                                                transmission)
+            details = self._get_utility(network_bw, partition_idx, overall_thr_weight, mobile_thr_weight,
+                                        cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band,
+                                        transmission, 'hybrid')
+            utility = sum(details)
             if max_utility is None or utility > max_utility:
                 max_utility = utility
                 max_idx = partition_idx
         return max_idx, max_utility
 
     def _get_utility_details(self, network_bw, partition_idx, overall_thr_weight, mobile_thr_weight,
-                             cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band, transmission):
+                             cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band, transmission, method):
         """
         Please refer to the document to check the detailed formulation.
         :param network_bw: (Mbps) the down link bandwidth when returning data from the satellite to the ground
@@ -155,13 +161,19 @@ class Code2SpacePartition:
         :param transmission: specific network latency when using repeater satellites to communicate data
         :return: the detailed utility
         """
+        if partition_idx == 0 and method == 'cloud_only':
+            partition_size = self.IMAGE_SIZE
+        else:
+            partition_size = self.layer_size[partition_idx]
+
         pi_latency, server_latency = self.pi_latency[partition_idx] / cpu_freq_ratio, \
                                      self.server_latency[partition_idx] * server_ratio
-        band_occupation = self.layer_size[partition_idx] / (network_bw / 8.0) * 1 / min(33.33, pi_latency)
         if partition_idx == 8:
             net_latency = 0
+            band_occupation = self.MIN_BAND_OCCUPY / (network_bw / 8.0) * 1 / min(33.33, pi_latency)
         else:
-            net_latency = self.layer_size[partition_idx] / (network_bw / 8.0) + 0.007 + transmission
+            net_latency = partition_size / (network_bw / 8.0) + 0.007 + transmission
+            band_occupation = partition_size / (network_bw / 8.0) * 1 / min(33.33, pi_latency)
         # normalize the achieved end-to-end latency
         norm_e2e = (math.tanh(1 / (pi_latency + net_latency + server_latency)) - math.tanh(1 / max_e2e)) / (
                 math.tanh(1 / min_e2e) - math.tanh(1 / max_e2e))
@@ -175,9 +187,10 @@ class Code2SpacePartition:
                 (1 - overall_thr_weight - mobile_thr_weight) * norm_network]
 
     def _get_utility(self, network_bw, partition_idx, overall_thr_weight, mobile_thr_weight,
-                     cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band, transmission):
+                     cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band, transmission, method):
 
         details = self._get_utility_details(network_bw, partition_idx, overall_thr_weight, mobile_thr_weight,
-                                            cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band, transmission)
+                                            cpu_freq_ratio, server_ratio, min_e2e, max_e2e, min_band, max_band,
+                                            transmission, method)
 
         return sum(details)
